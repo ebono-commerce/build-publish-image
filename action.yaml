@@ -69,21 +69,21 @@
       - run: ${{ github.action_path }}/trivy-docker-image-scan.sh
         shell: bash
         
-      - id: check-image-exists
-        shell: bash
-        run: |
-             set +e
-             tags=$( }}" --format=json)
-             if [[ "$tags" == "[]" ]]; then
-                 echo "Image not found, Building"
-                 echo "::set-output name=exists::0"
-             else
-                 echo "::set-output name=exists::1"
-                 echo "Image already exists"
-             fi
+      #- id: check-image-exists
+      #  shell: bash
+      #  run: |
+      #       set +e
+      #       tags=$( }}" --format=json)
+      #       if [[ "$tags" == "[]" ]]; then
+      #           echo "Image not found, Building"
+      #           echo "::set-output name=exists::0"
+      #       else
+      #           echo "::set-output name=exists::1"
+      #           echo "Image already exists"
+      #       fi
 
       - id: docker-build
-        if: steps.check-image-exists.outputs.exists == '0'
+        #if: steps.check-image-exists.outputs.exists == '0'
         env:
           NPM_TOKEN: ${{ inputs.npm_token }}
         shell: bash
@@ -93,7 +93,7 @@
           
       # Push the Docker image to Google Container Registry
       - id: publish-to-registry
-        if: steps.check-image-exists.outputs.exists == '0'
+        #if: steps.check-image-exists.outputs.exists == '0'
         shell: bash
         run: |
           docker push ${{ inputs.registry_host }}/${{ inputs.gke_project }}/${{repository_name}}/${{ inputs.image_name }}:${{ inputs.sha }}
