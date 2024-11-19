@@ -1,4 +1,3 @@
-
     name: "Build and push image"
     description: "Builds and pushes an image to a registry"
     
@@ -12,7 +11,7 @@
       gke_project:
         description: "Name of gke project"
         required: true
-      repository_name:
+      repository:
         description: "Name of the artifact repository"
         required: true
       image_name:
@@ -21,7 +20,7 @@
       sha:
         description: "Image tag"
         required: true
-        default: ${{ github.sha }}
+        # default: ${{ github.sha }}
       google_private_key:
         description: "Key to connect to Google cloud"
         required: true
@@ -54,53 +53,42 @@
         shell: bash
 
       - id: auth
-        uses: google-github-actions/auth@v0
+        uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ inputs.google_private_key }}
 
       - id: set-up-cloud-sdk
-        uses: google-github-actions/setup-gcloud@v0
+        uses: google-github-actions/setup-gcloud@v1
 
       - id: configure-docker
         shell: bash
         run: |
           gcloud auth configure-docker asia-docker.pkg.dev
+      
+      - id: set-execute-permission
+        shell: bash
+        run: chmod +x ${{ github.action_path }}/trivy-docker-image-scan.sh
           
       - run: ${{ github.action_path }}/trivy-docker-image-scan.sh
         shell: bash
         
-      #- id: check-image-exists
-      #  shell: bash
-      #  run: |
-      #       set +e
-      #       tags=$( }}" --format=json)
-      #       if [[ "$tags" == "[]" ]]; then
-      #           echo "Image not found, Building"
-      #           echo "::set-output name=exists::0"
-      #       else
-      #           echo "::set-output name=exists::1"
-      #           echo "Image already exists"
-      #       fi
-
       - id: docker-build
-        #if: steps.check-image-exists.outputs.exists == '0'
         env:
           NPM_TOKEN: ${{ inputs.npm_token }}
         shell: bash
         run: |
-          docker build ${{ inputs.docker_build_args }} -t "${{ inputs.registry_host }}/${{ inputs.gke_project }}/${{repository_name}}/${{ inputs.image_name }}:${{ inputs.sha }}" .
+          docker build ${{ inputs.docker_build_args }} -t "${{ inputs.registry_host }}/${{ inputs.gke_project }}/${{ inputs.repository }}/${{ inputs.image_name }}:${{ inputs.sha }}" .
 
           
       # Push the Docker image to Google Container Registry
       - id: publish-to-registry
-        #if: steps.check-image-exists.outputs.exists == '0'
         shell: bash
         run: |
-          docker push ${{ inputs.registry_host }}/${{ inputs.gke_project }}/${{repository_name}}/${{ inputs.image_name }}:${{ inputs.sha }}
+          docker push ${{ inputs.registry_host }}/${{ inputs.gke_project }}/${{ inputs.repository }}/${{ inputs.image_name }}:${{ inputs.sha }}
             
-      #- id: check-image-exists
-      #  shell: bash
-      #  run: |
+      # - id: check-image-exists
+      #   shell: bash
+      #   run: |
       #       set +e
       #       tags=$(gcloud container images list-tags ${{ inputs.registry_host }}/${{ inputs.gke_project }}/${{ inputs.image_name }} --filter="tags:${{ inputs.sha }}" --format=json)
       #       if [[ "$tags" == "[]" ]]; then
